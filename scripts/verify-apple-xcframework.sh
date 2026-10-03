@@ -10,7 +10,7 @@ if [[ ! -f "$INFO_PLIST" ]]; then
   exit 1
 fi
 
-python3 - "$INFO_PLIST" <<'PY'
+LIBRARY_PATHS="$(python3 - "$INFO_PLIST" <<'PY'
 import plistlib
 import sys
 
@@ -47,5 +47,36 @@ macos_architectures = set().union(
 if not {"arm64", "x86_64"}.issubset(macos_architectures):
     raise SystemExit(f"Incomplete macOS slice: {sorted(macos_architectures)}")
 
-print("Verified iOS device, iOS simulator, and universal macOS slices")
+if len(macos) != 1:
+    raise SystemExit(f"Expected one universal macOS slice, found {len(macos)}")
+
+print(
+    ios_device[0]["LibraryIdentifier"],
+    ios_simulator[0]["LibraryIdentifier"],
+    macos[0]["LibraryIdentifier"],
+)
 PY
+)"
+read -r IOS_DEVICE_LIBRARY_PATH IOS_SIMULATOR_LIBRARY_PATH MACOS_LIBRARY_PATH <<< "$LIBRARY_PATHS"
+
+for library_path in "$IOS_DEVICE_LIBRARY_PATH" "$IOS_SIMULATOR_LIBRARY_PATH"; do
+  binary="$XCFRAMEWORK_PATH/$library_path/InterviewPilotSyntaxFFI.framework/InterviewPilotSyntaxFFI"
+  if ! file "$binary" | grep -q "current ar archive"; then
+    echo "iOS slice is not a static framework: $binary" >&2
+    exit 1
+  fi
+done
+
+MACOS_BINARY="$XCFRAMEWORK_PATH/$MACOS_LIBRARY_PATH/InterviewPilotSyntaxFFI.framework/InterviewPilotSyntaxFFI"
+if ! file "$MACOS_BINARY" | grep -q "dynamically linked shared library"; then
+  echo "macOS slice is not a dynamic framework: $MACOS_BINARY" >&2
+  exit 1
+fi
+
+EXPECTED_INSTALL_NAME="@rpath/InterviewPilotSyntaxFFI.framework/Versions/A/InterviewPilotSyntaxFFI"
+if ! otool -D "$MACOS_BINARY" | tail -n +2 | grep -Fxq "$EXPECTED_INSTALL_NAME"; then
+  echo "Unexpected macOS framework install name: $MACOS_BINARY" >&2
+  exit 1
+fi
+
+echo "Verified static iOS slices and a universal dynamic macOS slice"

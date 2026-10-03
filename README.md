@@ -29,8 +29,10 @@ swift test --disable-sandbox
 
 The build script produces
 `platforms/apple/InterviewPilotSyntax.xcframework` with iOS device, iOS
-simulator, and universal macOS slices. `Package.swift` uses that local artifact
-for development and testing.
+simulator, and universal macOS slices. The iOS slices are static. The macOS
+slice is dynamic so it can coexist with other Rust-backed libraries without
+linking duplicate Rust runtime symbols into the app. `Package.swift` uses the
+local artifact for development and testing.
 
 ## Apple release
 
