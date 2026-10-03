@@ -1,0 +1,26 @@
+[workspace]
+members = [
+    "crates/interview-pilot-syntax-core",
+    "crates/interview-pilot-syntax-ffi",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/Interview-Pilot/InterviewPilotSyntax"
+
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+two-face = { version = "0.5.2", default-features = false, features = ["syntect-default-fancy"] }
+
+# Keep the parser implementation on the audited Interview Pilot fork.
+[patch.crates-io]
+syntect = { git = "https://github.com/Interview-Pilot/syntect.git", rev = "e4670846ecf16d8832db6c43d531bec466214e27" }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"

@@ -1,0 +1,13 @@
+[package]
+name = "interview-pilot-syntax-ffi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+interview-pilot-syntax-core = { path = "../interview-pilot-syntax-core" }
+serde_json.workspace = true
