@@ -1,6 +1,11 @@
 /target/
 /.build/
+/.gradle/
+/.kotlin/
 /.swiftpm/
 /platforms/apple/InterviewPilotSyntax.xcframework/
+/platforms/android/build/
+/platforms/android/src/main/jniLibs/
+/dist/
 *.xcframework.zip
 .DS_Store
