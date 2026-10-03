@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  ios:
+  apple:
     runs-on: macos-15
 
     steps:
@@ -22,16 +22,19 @@ jobs:
           targets: >
             aarch64-apple-ios,
             aarch64-apple-ios-sim,
-            x86_64-apple-ios
+            x86_64-apple-ios,
+            aarch64-apple-darwin,
+            x86_64-apple-darwin
 
       - name: Test Rust core and FFI
         run: cargo test --workspace --all-targets --locked
 
-      - name: Build and verify iOS XCFramework
-        run: ./scripts/build-ios-xcframework.sh
+      - name: Build and verify Apple XCFramework
+        run: ./scripts/build-apple-xcframework.sh
 
       - name: Compile Swift package and tests
         run: |
           swift build --disable-sandbox --build-tests \
             --triple arm64-apple-ios17.0-simulator \
             --sdk "$(xcrun --sdk iphonesimulator --show-sdk-path)"
+          swift test --disable-sandbox

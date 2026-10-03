@@ -8,8 +8,15 @@ OUTPUT="$ROOT/platforms/apple/InterviewPilotSyntax.xcframework"
 CRATE="interview-pilot-syntax-ffi"
 LIBRARY="libinterview_pilot_syntax_ffi.a"
 FRAMEWORK_NAME="InterviewPilotSyntaxFFI"
+TARGETS=(
+  aarch64-apple-ios
+  aarch64-apple-ios-sim
+  x86_64-apple-ios
+  aarch64-apple-darwin
+  x86_64-apple-darwin
+)
 
-for target in aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios; do
+for target in "${TARGETS[@]}"; do
   if ! rustup target list --installed | grep -qx "$target"; then
     echo "Missing Rust target: $target" >&2
     echo "Install it with: rustup target add $target" >&2
@@ -17,8 +24,8 @@ for target in aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios; do
   fi
 done
 
-echo "Building InterviewPilotSyntax for iOS device and simulator..."
-for target in aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios; do
+echo "Building InterviewPilotSyntax for iOS and macOS..."
+for target in "${TARGETS[@]}"; do
   cargo build \
     --locked \
     --release \
@@ -33,7 +40,12 @@ trap 'rm -rf "$TEMP_DIR"' EXIT
 lipo -create \
   "$ROOT/target/aarch64-apple-ios-sim/release/$LIBRARY" \
   "$ROOT/target/x86_64-apple-ios/release/$LIBRARY" \
-  -output "$TEMP_DIR/$LIBRARY"
+  -output "$TEMP_DIR/ios-simulator.a"
+
+lipo -create \
+  "$ROOT/target/aarch64-apple-darwin/release/$LIBRARY" \
+  "$ROOT/target/x86_64-apple-darwin/release/$LIBRARY" \
+  -output "$TEMP_DIR/macos.a"
 
 create_static_framework() {
   local library_path="$1"
@@ -70,7 +82,7 @@ MODULEMAP
     <key>CFBundlePackageType</key>
     <string>FMWK</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.1.0</string>
+    <string>0.2.0</string>
     <key>CFBundleVersion</key>
     <string>1</string>
 </dict>
@@ -80,16 +92,20 @@ PLIST
 
 create_static_framework \
   "$ROOT/target/aarch64-apple-ios/release/$LIBRARY" \
-  "$TEMP_DIR/device"
+  "$TEMP_DIR/ios-device"
 create_static_framework \
-  "$TEMP_DIR/$LIBRARY" \
-  "$TEMP_DIR/simulator"
+  "$TEMP_DIR/ios-simulator.a" \
+  "$TEMP_DIR/ios-simulator"
+create_static_framework \
+  "$TEMP_DIR/macos.a" \
+  "$TEMP_DIR/macos"
 
 rm -rf "$OUTPUT"
 xcodebuild -create-xcframework \
-  -framework "$TEMP_DIR/device/$FRAMEWORK_NAME.framework" \
-  -framework "$TEMP_DIR/simulator/$FRAMEWORK_NAME.framework" \
+  -framework "$TEMP_DIR/ios-device/$FRAMEWORK_NAME.framework" \
+  -framework "$TEMP_DIR/ios-simulator/$FRAMEWORK_NAME.framework" \
+  -framework "$TEMP_DIR/macos/$FRAMEWORK_NAME.framework" \
   -output "$OUTPUT"
 
-"$ROOT/scripts/verify-ios-xcframework.sh" "$OUTPUT"
+"$ROOT/scripts/verify-apple-xcframework.sh" "$OUTPUT"
 echo "Created $OUTPUT"

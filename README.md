@@ -4,8 +4,8 @@ Shared, offline syntax highlighting for Interview Pilot clients. The Rust core
 uses the pinned Interview Pilot Syntect fork and exposes bounded, ownership-safe
 FFI. Platform adapters render the immutable line-and-run response natively.
 
-The first supported client is iOS. Other platform adapters are intentionally
-out of scope until they are implemented and verified separately.
+The supported Apple clients are iOS and macOS. Other platform adapters are
+intentionally out of scope until they are implemented and verified separately.
 
 ## Safety contract
 
@@ -17,22 +17,24 @@ out of scope until they are implemented and verified separately.
 - The engine performs no network, file-system, process, or dynamic-code access.
 - Unsupported language identifiers return plain code rather than an error.
 
-## iOS development
+## Apple development
 
 ```sh
-./scripts/build-ios-xcframework.sh
+./scripts/build-apple-xcframework.sh
 swift build --disable-sandbox --build-tests \
   --triple arm64-apple-ios17.0-simulator \
   --sdk "$(xcrun --sdk iphonesimulator --show-sdk-path)"
+swift test --disable-sandbox
 ```
 
 The build script produces
-`platforms/apple/InterviewPilotSyntax.xcframework` with device and simulator
-slices. `Package.swift` uses that local artifact for development and testing.
+`platforms/apple/InterviewPilotSyntax.xcframework` with iOS device, iOS
+simulator, and universal macOS slices. `Package.swift` uses that local artifact
+for development and testing.
 
-## iOS release
+## Apple release
 
-An `ios-v*` tag runs the verified build and publishes the zipped XCFramework as
+An `apple-v*` tag runs the verified build and publishes the zipped XCFramework as
 a GitHub release asset. The workflow then creates an immutable `spm/<tag>`
 branch whose `Package.swift` references that asset by its computed checksum.
 Clients should pin the resulting Swift package commit rather than the mutable
