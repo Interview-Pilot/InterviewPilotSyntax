@@ -13,9 +13,10 @@ let package = Package(
     ],
     targets: [
         .binaryTarget(
-            name: "InterviewPilotSyntaxFFI",
-            path: "platforms/apple/InterviewPilotSyntax.xcframework"
-        ),
+    name: "InterviewPilotSyntaxFFI",
+    url: "https://github.com/Interview-Pilot/InterviewPilotSyntax/releases/download/apple-v0.2.2/InterviewPilotSyntax.xcframework.zip",
+    checksum: "2dfa3dddd5c17844529d9538f68ad1a81d841df2a2a0d3763f2ce1cb88bf1895"
+),
         .target(
             name: "InterviewPilotSyntax",
             dependencies: ["InterviewPilotSyntaxFFI"],
