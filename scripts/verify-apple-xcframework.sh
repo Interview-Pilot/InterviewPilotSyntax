@@ -65,6 +65,12 @@ for library_path in "$IOS_DEVICE_LIBRARY_PATH" "$IOS_SIMULATOR_LIBRARY_PATH"; do
     echo "iOS slice is not a static framework: $binary" >&2
     exit 1
   fi
+
+  framework_plist="$XCFRAMEWORK_PATH/$library_path/InterviewPilotSyntaxFFI.framework/Info.plist"
+  if ! /usr/libexec/PlistBuddy -c "Print :MinimumOSVersion" "$framework_plist" 2>/dev/null | grep -q .; then
+    echo "iOS framework is missing MinimumOSVersion: $framework_plist" >&2
+    exit 1
+  fi
 done
 
 MACOS_BINARY="$XCFRAMEWORK_PATH/$MACOS_LIBRARY_PATH/InterviewPilotSyntaxFFI.framework/InterviewPilotSyntaxFFI"
@@ -76,6 +82,12 @@ fi
 EXPECTED_INSTALL_NAME="@rpath/InterviewPilotSyntaxFFI.framework/Versions/A/InterviewPilotSyntaxFFI"
 if ! otool -D "$MACOS_BINARY" | tail -n +2 | grep -Fxq "$EXPECTED_INSTALL_NAME"; then
   echo "Unexpected macOS framework install name: $MACOS_BINARY" >&2
+  exit 1
+fi
+
+MACOS_PLIST="$XCFRAMEWORK_PATH/$MACOS_LIBRARY_PATH/InterviewPilotSyntaxFFI.framework/Resources/Info.plist"
+if ! /usr/libexec/PlistBuddy -c "Print :LSMinimumSystemVersion" "$MACOS_PLIST" 2>/dev/null | grep -q .; then
+  echo "macOS framework is missing LSMinimumSystemVersion: $MACOS_PLIST" >&2
   exit 1
 fi
 

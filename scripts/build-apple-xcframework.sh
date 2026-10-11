@@ -9,6 +9,9 @@ CRATE="interview-pilot-syntax-ffi"
 STATIC_LIBRARY="libinterview_pilot_syntax_ffi.a"
 DYNAMIC_LIBRARY="libinterview_pilot_syntax_ffi.dylib"
 FRAMEWORK_NAME="InterviewPilotSyntaxFFI"
+# Keep in sync with the platforms in Package.swift.
+IOS_MINIMUM_VERSION="17.0"
+MACOS_MINIMUM_VERSION="14.0"
 TARGETS=(
   aarch64-apple-ios
   aarch64-apple-ios-sim
@@ -45,8 +48,9 @@ lipo -create \
 
 write_framework_metadata() {
   local framework="$1"
-  local minimum_system_version="${2:-}"
-  local plist_directory="${3:-$framework}"
+  local minimum_version_key="$2"
+  local minimum_version="$3"
+  local plist_directory="${4:-$framework}"
 
   cat > "$framework/Modules/module.modulemap" <<'MODULEMAP'
 framework module InterviewPilotSyntaxFFI {
@@ -74,19 +78,11 @@ MODULEMAP
     <key>CFBundlePackageType</key>
     <string>FMWK</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.2.1</string>
+    <string>0.2.2</string>
     <key>CFBundleVersion</key>
     <string>1</string>
-PLIST
-
-  if [[ -n "$minimum_system_version" ]]; then
-    cat >> "$plist_directory/Info.plist" <<PLIST
-    <key>LSMinimumSystemVersion</key>
-    <string>$minimum_system_version</string>
-PLIST
-  fi
-
-  cat >> "$plist_directory/Info.plist" <<'PLIST'
+    <key>$minimum_version_key</key>
+    <string>$minimum_version</string>
 </dict>
 </plist>
 PLIST
@@ -100,7 +96,9 @@ create_static_framework() {
   mkdir -p "$framework/Headers" "$framework/Modules"
   cp "$library_path" "$framework/$FRAMEWORK_NAME"
   cp "$HEADER_DIR/interview_pilot_syntax.h" "$framework/Headers/"
-  write_framework_metadata "$framework"
+  # App Store validation requires MinimumOSVersion on every framework bundle
+  # Xcode copies into an iOS app, including this static one.
+  write_framework_metadata "$framework" "MinimumOSVersion" "$IOS_MINIMUM_VERSION"
 }
 
 create_dynamic_macos_framework() {
@@ -125,7 +123,8 @@ create_dynamic_macos_framework() {
     -id "@rpath/$FRAMEWORK_NAME.framework/Versions/A/$FRAMEWORK_NAME" \
     "$binary"
   cp "$HEADER_DIR/interview_pilot_syntax.h" "$version_directory/Headers/"
-  write_framework_metadata "$framework" "14.0" "$version_directory/Resources"
+  write_framework_metadata \
+    "$framework" "LSMinimumSystemVersion" "$MACOS_MINIMUM_VERSION" "$version_directory/Resources"
 }
 
 create_static_framework \
